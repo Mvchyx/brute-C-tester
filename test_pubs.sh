@@ -153,4 +153,4 @@ else
 fi
 
 # Clean up the hidden Valgrind log
-[ -f valgrind_leak.log ] && rm valgrind_leak.log
+rm -f valgrind_leak.log
