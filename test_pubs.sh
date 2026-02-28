@@ -123,25 +123,16 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
     done
 
 else
-    add=0 # 0 for numbers smaller than 10
     mkdir -p my_data
 
-    ACTUAL_FILE=$(ls data/pub01*.in 2>/dev/null | head -n 1) # finds first file with the aproximate expected name
-    stripped=$(echo "$ACTUAL_FILE" | sed 's/...$//') # strip last three characters aka the .in part
-
-    for i in `seq 1 20`
+    for FILE in data/*.in;
     do
-        if [ $i -eq 10 ]; then
-            add="" # number is two-digit so omit the zero infront
-        fi
-        
-        PROBLEM=$(echo "$stripped" | sed "s/[0-9][0-9]/$add$i/") # find 2 numbers and change them to i (=iterate)
-
         # do this only if the file with the corresponding name exists
-        if test -f $PROBLEM.in; then
-            MY_SOLUTION=my_data/my_pub$add$i # where I want my solutions to be saved
-            
-            
+        if test -f $FILE; then
+            number=$(echo "$FILE" | sed 's/^[^0-9]*\([0-9]*\).*$/\1/') # extracts first occurence of a number in the file name
+            MY_SOLUTION=my_data/my_pub$number # where I want my solutions to be saved
+            PROBLEM="${FILE%.in}" # strip away the .in
+                    
             start_time=$(date +%s%3N) #start timer
             # run my program
             $valgrind $PROGRAM_MY < $PROBLEM.in > $MY_SOLUTION.out 2> $MY_SOLUTION.err
@@ -152,7 +143,7 @@ else
 
             # check valgrind error           
             if [ "$valgrind_status" -eq 42 ]; then
-                printf "\n Pub test $i memory leak detected:"
+                printf "\n Pub test $number memory leak detected:"
                 cat valgrind_leak.log # show the valgrind error
                 correct=0
             fi
@@ -164,9 +155,9 @@ else
                 diff $MY_SOLUTION.out $PROBLEM.out
             fi
             if [ $? -eq 0 ]; then
-                echo "Pub test $i is correct (${run_time}ms)"
+                echo "Pub test $number is correct (${run_time}ms)"
             else
-                printf "\n Pub test $i is not correct\n"
+                printf "\n Pub test $number is not correct\n"
                 correct=0
                 if [ $dump -eq 1 ]; then
                     cat $PROBLEM.out
@@ -199,6 +190,9 @@ else
             if [ $correct -eq 0 ]; then
                 break
             fi
+        else
+            echo "Error loading files: The folder is probably empty"
+            exit 1
         fi
     done
 fi
