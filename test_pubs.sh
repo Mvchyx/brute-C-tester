@@ -20,10 +20,11 @@ hex_mode=0
 random_mode=0
 valgrind=""
 compile=0
+dump=0
 
 # get the flags and make the corresponding vars true 
 # -x for hex and -r for randomly generated inputs from them
-while getopts "xrvc" flag; do
+while getopts "xrvcd" flag; do
     case "${flag}" in
         x) echo "Hex mode on" 
             hex_mode=1 ;;
@@ -33,6 +34,8 @@ while getopts "xrvc" flag; do
             valgrind="valgrind -q --leak-check=yes --log-file=valgrind_leak.log --error-exitcode=42"  ;;
         c) echo "Compilation on"
             compile=1 ;;
+        d) echo "Entire dump on"
+            dump=1 ;;
     esac
 done
 
@@ -76,12 +79,25 @@ if [ $random_mode -eq 1 ]; then
         else
             printf "\n Random test $i is not correct\n"
             correct=0
+            if [ $dump -eq 1 ]; then
+                cat $PROBLEM.out.hex
+                printf "\n\n"
+                cat $MY_SOLUTION.out.hex
+                printf "\n\n"
+            fi
         fi
 
         # if -x compare the solutions also in the hex form
         if [ $hex_mode -eq 1 ] && [ $correct -eq 0 ]; then
             hexdump -C $MY_SOLUTION.out > $MY_SOLUTION.out.hex
             hexdump -C $PROBLEM.out > $PROBLEM.out.hex
+
+            if [ $dump -eq 1 ]; then
+                cat $PROBLEM.out.hex
+                printf "\n\n"
+                cat $MY_SOLUTION.out.hex
+                printf "\n\n"
+            fi
 
             diff $MY_SOLUTION.out.hex $PROBLEM.out.hex
         fi
@@ -96,21 +112,26 @@ if [ $random_mode -eq 1 ]; then
 else
     add=0 # 0 for numbers smaller than 10
     mkdir -p my_data
+
+    ACTUAL_FILE=$(ls data/pub01*.in 2>/dev/null | head -n 1) # finds first file with the aproximate expected name
+    stripped=$(echo "$ACTUAL_FILE" | sed 's/...$//') # strip last three characters aka the .in part
+
     for i in `seq 1 20`
     do
         if [ $i -eq 10 ]; then
             add="" # number is two-digit so omit the zero infront
         fi
+        
+        PROBLEM=$(echo "$stripped" | sed "s/[0-9][0-9]/$add$i/") # find 2 numbers and change them to i (=iterate)
 
         # do this only if the file with the corresponding name exists
-        if test -f data/pub$add$i.in; then
-            PROBLEM=data/pub$add$i # where are the reference data saved
-            MY_SOLUTION_OUT=my_data/my_pub$add$i.out # where I want my solutions to be saved
+        if test -f $PROBLEM.in; then
+            MY_SOLUTION=my_data/my_pub$add$i # where I want my solutions to be saved
             
             
             start_time=$(date +%s%3N) #start timer
             # run my program
-            $valgrind $PROGRAM_MY < $PROBLEM.in > $MY_SOLUTION_OUT
+            $valgrind $PROGRAM_MY < $PROBLEM.in > $MY_SOLUTION.out 2> $MY_SOLUTION.err
             valgrind_status=$?
             end_time=$(date +%s%3N) # end timer
             run_time=$(($end_time - $start_time)) # final time
@@ -123,24 +144,41 @@ else
                 correct=0
             fi
 
-            # compare my solution with theirs and print the outcome
-            diff $MY_SOLUTION_OUT $PROBLEM.out
+            # compare my solution with theirs and print the outcome, iff .err exists compare also against it
+            if test -f $PROBLEM.err; then
+                diff $MY_SOLUTION.out $PROBLEM.out && diff $MY_SOLUTION.err $PROBLEM.err
+            else
+                diff $MY_SOLUTION.out $PROBLEM.out
+            fi
             if [ $? -eq 0 ]; then
                 echo "Pub test $i is correct (${run_time}ms)"
             else
                 printf "\n Pub test $i is not correct\n"
                 correct=0
+                if [ $dump -eq 1 ]; then
+                    cat $PROBLEM.out
+                    printf "\n\n"
+                    cat $MY_SOLUTION.out
+                    printf "\n\n"
+                fi
             fi
 
             # if -x compare it also in the hex form
             if [ $hex_mode -eq 1 ] && [ $correct -eq 0 ]; then
-                hexdump -C $MY_SOLUTION_OUT > $MY_SOLUTION_OUT.hex
+                hexdump -C $MY_SOLUTION.out > $MY_SOLUTION.out.hex
 
                 if !(test -f $PROBLEM.out.hex); then
                     hexdump -C $PROBLEM.out > $PROBLEM.out.hex
                 fi
 
-                diff $MY_SOLUTION_OUT.hex $PROBLEM.out.hex
+                if [ $dump -eq 1 ]; then
+                    cat $PROBLEM.out.hex
+                    printf "\n\n"
+                    cat $MY_SOLUTION.out.hex
+                    printf "\n\n"
+                fi
+
+                diff $MY_SOLUTION.out.hex $PROBLEM.out.hex
 
             fi
 

@@ -26,6 +26,8 @@ Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install val
 
 * **`-v` (Valgrind Check):** Runs a silent Valgrind memory leak check. Only prints an error report if a memory leak or invalid read/write is detected.
 
+* **`-d` (Entire dump):** If an output mismatch occurs, along with the differences also prints the entire output files.
+
 ## Usage Examples
 
 **Basic Pub Test:**
