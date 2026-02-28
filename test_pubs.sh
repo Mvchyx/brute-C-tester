@@ -21,10 +21,11 @@ random_mode=0
 valgrind=""
 compile=0
 dump=0
+input=0
 
 # get the flags and make the corresponding vars true 
 # -x for hex and -r for randomly generated inputs from them
-while getopts "xrvcd" flag; do
+while getopts "xrvcd3" flag; do
     case "${flag}" in
         x) echo "Hex mode on" 
             hex_mode=1 ;;
@@ -36,6 +37,8 @@ while getopts "xrvcd" flag; do
             compile=1 ;;
         d) echo "Entire dump on"
             dump=1 ;;
+        3) echo "Tets with your custom input: "
+            input=1 ;;
     esac
 done
 
@@ -43,9 +46,13 @@ if [ $compile -eq 1 ]; then
     $COMPILATOR -g $NC_PROGRAM_MY || { echo "Compilation failed aborting"; exit 1; }
 fi
 
+if [ $input -eq 1 ] && [ $random_mode -eq 1 ]; then
+    echo "Warning: random mode with single input in -> only signle input"
+fi
+
 # radnom or pub mode based on the given flag
 # in a pub mode it compares the reference solution and mine and stops when they differ
-if [ $random_mode -eq 1 ]; then
+if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
     mkdir -p my_random_data
     for i in `seq 1 100`
     do
@@ -53,6 +60,12 @@ if [ $random_mode -eq 1 ]; then
         MY_SOLUTION=my_random_data/my_hw$HW
         # generate random input
         $PROGRAM_REF -generate > $PROBLEM.in 2>/dev/null
+
+        if [ $input -eq 1 ]; then
+            echo "Enter 3 values separated by spaces:"
+            read val1 val2 val3
+            echo "$val1 $val2 $val3" > $PROBLEM.in
+        fi
         
         # get their solution to the problem
         $PROGRAM_REF < $PROBLEM.in > $PROBLEM.out 2>$PROBLEM.err
@@ -102,8 +115,8 @@ if [ $random_mode -eq 1 ]; then
             diff $MY_SOLUTION.out.hex $PROBLEM.out.hex
         fi
 
-        # stop at an incorrect solution
-        if [ $correct -eq 0 ]; then
+        # stop at an incorrect solution or if single input is on
+        if [ $correct -eq 0 ] || [ $input -eq 1 ]; then
             break
         fi
 

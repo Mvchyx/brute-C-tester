@@ -28,6 +28,8 @@ Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install val
 
 * **`-d` (Entire dump):** If an output mismatch occurs, along with the differences also prints the entire output files.
 
+* **`-3` (Custom input for HW03):** Tets your solution against theirs with your custom input. It asks for the three values.
+
 ## Usage Examples
 
 **Basic Pub Test:**
