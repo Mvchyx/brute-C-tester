@@ -102,7 +102,7 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         if [ $? -eq 0 ]; then
             echo "Test $i is correct (${run_time}ms)"
         else
-            printf "\n Test $i is not correct\n"
+            printf "\n Test $i is not correct (Your output is the first)\n"
             correct=0
             if [ $dump -eq 1 ]; then
                 cat $PROBLEM.out.hex
@@ -170,7 +170,7 @@ else
             if [ $? -eq 0 ]; then
                 echo "Pub test $number is correct (${run_time}ms)"
             else
-                printf "\n Pub test $number is not correct\n"
+                printf "\n Pub test $number is not correct (Your output is the first)\n"
                 correct=0
                 if [ $dump -eq 1 ]; then
                     cat $PROBLEM.out
