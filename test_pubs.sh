@@ -156,7 +156,7 @@ else
 
             # check valgrind error           
             if [ "$valgrind_status" -eq 42 ]; then
-                printf "\n Pub test $number memory leak detected:"
+                printf "\n Pub test $number ("${PROBLEM##*/}") memory leak detected:"
                 cat valgrind_leak.log # show the valgrind error
                 correct=0
             fi
@@ -168,9 +168,9 @@ else
                 diff $MY_SOLUTION.out $PROBLEM.out
             fi
             if [ $? -eq 0 ]; then
-                echo "Pub test $number is correct (${run_time}ms)"
+                echo "Pub test $number ("${PROBLEM##*/}") is correct (${run_time}ms)"
             else
-                printf "\n Pub test $number is not correct (Your output is the first)\n"
+                printf "\n Pub test $number ("${PROBLEM##*/}") is not correct (Your output is the first)\n"
                 correct=0
                 if [ $dump -eq 1 ]; then
                     cat $PROBLEM.out
