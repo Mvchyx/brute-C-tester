@@ -18,7 +18,7 @@ Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install val
 
 ## Arguments & Flags
 
-* **`-r` (Random Mode):** Uses the reference generator to create random inputs. If all tests pass, it automatically runs 100 iterations. Data is saved in the `my_random_data` folder.
+* **`-r/-R` (Random Mode):** Uses the reference generator to create random inputs. If all tests pass, it automatically runs 100 iterations. Data is saved in the `my_random_data` folder. Upper case R let's you input custom number of tests. Then it just prints the summary. (Or the first failed test)
 
 * **`-x` (Hex Dump):** If an output mismatch occurs, it generates `.hex` files and prints a hex dump comparison.
 
