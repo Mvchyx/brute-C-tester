@@ -50,7 +50,7 @@ echo "========================================"
 printf " Compilation (-c)     : %s\n" "$([ "$compile" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Valgrind (-v)        : %s\n" "$([ -n "$valgrind" ] && echo "ON" || echo "OFF")"
 printf " Hex diff (-x)        : %s\n" "$([ "$hex_mode" -eq 1 ] && echo "ON" || echo "OFF")"
-printf " Random (-r/-R)          : %s\n" "$([ "$random_mode" -eq 1 ] && echo "ON" || echo "OFF")"
+printf " Random (-r/-R)       : %s\n" "$([ "$random_mode" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Entire dump (-d)     : %s\n" "$([ "$dump" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Manual Input (-i)    : %s\n" "$([ "$input" -eq 1 ] && echo "ON" || echo "OFF")"
 
@@ -129,22 +129,24 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         if [ $correct -eq 1 ]; then
             if [ $loops -lt 101 ]; then
                 echo "Test $i is correct (${run_time}ms)"
+            else
+                # progress bar
+                percent=$(( number_of_correct * 100 / $loops ))
+                completed_blocks=$(( percent * $bar_width / 100 ))
+                bar=""
+                c=0
+                while [ $c -lt $completed_blocks ]; do
+                    bar="${bar}#"
+                    c=$(( c + 1 ))
+                done
+                printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
             fi
             # count parameters for statistics later
             number_of_correct=$((number_of_correct + 1 ))
             sum_runtimes=$((sum_runtimes + $run_time ))
             
-            # progress bar
-            percent=$(( number_of_correct * 100 / $loops ))
-            completed_blocks=$(( percent * $bar_width / 100 ))
-            bar=""
-            c=0
-            while [ $c -lt $completed_blocks ]; do
-                bar="${bar}#"
-                c=$(( c + 1 ))
-            done
 
-            printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
+
         else
             printf "\n Test $i is not correct (Your output is the first)\n"
             correct=0
