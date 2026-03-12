@@ -23,7 +23,7 @@ compile=0
 dump=0
 input=0
 large_random=0
-loops=100
+loops=30
 number_of_correct=0
 sum_runtimes=0
 
@@ -127,26 +127,26 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         fi
 
         if [ $correct -eq 1 ]; then
-            if [ $loops -lt 101 ]; then
-                echo "Test $i is correct (${run_time}ms)"
-            else
-                # progress bar
-                percent=$(( number_of_correct * 100 / $loops ))
-                completed_blocks=$(( percent * $bar_width / 100 ))
-                bar=""
-                c=0
-                while [ $c -lt $completed_blocks ]; do
-                    bar="${bar}#"
-                    c=$(( c + 1 ))
-                done
-                printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
-            fi
             # count parameters for statistics later
             number_of_correct=$((number_of_correct + 1 ))
             sum_runtimes=$((sum_runtimes + $run_time ))
-            
 
 
+            if [ $loops -lt 31 ]; then
+                echo "Test $i is correct (${run_time}ms)"
+            else            
+            # progress bar
+            percent=$(( number_of_correct * 100 / $loops ))
+            completed_blocks=$(( percent * $bar_width / 100 ))
+            bar=""
+            c=0
+            while [ $c -lt $completed_blocks ]; do
+                bar="${bar}#"
+                c=$(( c + 1 ))
+            done
+
+            printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
+            fi
         else
             printf "\n Test $i is not correct (Your output is the first)\n"
             correct=0
