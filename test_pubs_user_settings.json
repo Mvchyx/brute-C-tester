@@ -1,0 +1,3 @@
+{
+      "compilator": "gcc -Wall -Wshadow -Wstrict-prototypes -Wconversion -Wformat=2 -Wfloat-equal -std=c99 -pedantic -O2"
+}

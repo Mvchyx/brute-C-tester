@@ -1,0 +1,9 @@
+{
+  "hw_fallback": "01",
+  "compilator": "gcc",
+  "source_file": "main.c",
+  "compiled_binary": "./a.out",
+  "ref_prefix": "./b3b36prg-hw",
+  "ref_suffix": "-genref",
+  "default_loops": 30
+}

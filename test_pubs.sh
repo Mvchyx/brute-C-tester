@@ -1,16 +1,48 @@
 #!/bin/sh
 
-HW=01 # can be hardcoded in by commenting out the 3 lines below
+# 1. Search upwards for init_config.sh -> can be located anywhere upwards
+SEARCH_DIR="$(cd "$(dirname "$0")" && pwd)"
+INIT_SCRIPT=""
 
-# takes the HW number from the end of the working directory
+while true; do
+    if [ -f "$SEARCH_DIR/init_config.sh" ]; then
+        INIT_SCRIPT="$SEARCH_DIR/init_config.sh"
+        break
+    fi
+    
+    # Stop if we have reached the root directory without finding it
+    if [ "$SEARCH_DIR" = "/" ]; then
+        break
+    fi
+    
+    # Move up one directory level
+    SEARCH_DIR="$(dirname "$SEARCH_DIR")"
+done
+
+# Fail gracefully if it was never found
+if [ -z "$INIT_SCRIPT" ]; then
+    echo "Error: init_config.sh not found in this or any parent directories." >&2
+    exit 1
+fi
+
+# Load the configurations
+. "$INIT_SCRIPT"
+
+# 2. Dynamic HW number extraction
 SCRIPT_DIR="$PWD"
 FOLDER_NAME="${SCRIPT_DIR##*/}"
-HW=$(echo "$FOLDER_NAME" | sed 's/.*\(..\)$/\1/') # usable also in POSIX to extract last two char
+HW=$(echo "$FOLDER_NAME" | sed 's/.*\(..\)$/\1/')
 
-PROGRAM_REF=./b3b36prg-hw$HW-genref
-NC_PROGRAM_MY=main.c # my program not compiled
-PROGRAM_MY=./a.out
-COMPILATOR=gcc
+# Fallback if the folder parsing fails (e.g., if you run it from a weird directory)
+if [ -z "$HW" ]; then
+    HW="$CONFIG_HW_FALLBACK"
+fi
+
+# 3. Setup paths using JSON variables
+PROGRAM_REF="${CONFIG_REF_PREFIX}${HW}${CONFIG_REF_SUFFIX}"
+NC_PROGRAM_MY="$CONFIG_SOURCE_FILE"
+PROGRAM_MY="$CONFIG_COMPILED_BINARY"
+COMPILATOR="$CONFIG_COMPILATOR"
 
 # used as bool
 correct=1
@@ -23,13 +55,15 @@ compile=0
 dump=0
 input=0
 large_random=0
-loops=30
+loops="$CONFIG_DEFAULT_LOOPS"
 number_of_correct=0
 sum_runtimes=0
+columns=$( tput cols )
+side_by_side="-y --suppress-common-lines -W $columns"
 
 # get the flags and make the corresponding vars true 
 # what each flag does is clear from the config table below
-while getopts "xrvcdiR:" flag; do
+while getopts "xrvcsdiR:" flag; do
     case "${flag}" in
         x) hex_mode=1 ;;
         r) random_mode=1;;
@@ -39,6 +73,7 @@ while getopts "xrvcdiR:" flag; do
         i) input=1 ;;
         R) loops=${OPTARG}
             random_mode=1 ;;
+        s) side_by_side="" ;;
     esac
 done
 
@@ -53,6 +88,7 @@ printf " Hex diff (-x)        : %s\n" "$([ "$hex_mode" -eq 1 ] && echo "ON" || e
 printf " Random (-r/-R)       : %s\n" "$([ "$random_mode" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Entire dump (-d)     : %s\n" "$([ "$dump" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Manual Input (-i)    : %s\n" "$([ "$input" -eq 1 ] && echo "ON" || echo "OFF")"
+printf " Side by side (-s)    : %s\n" "$([ "$side_by_side" = "" ] && echo "OFF" || echo "ON")"
 
 echo "========================================"
 echo ""
@@ -77,7 +113,7 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
     #(in random mode just the last file stays their)
     if echo "$loops" | grep -Eq '^[0-9]+$'
     then
-        echo Looping for $loops times
+        echo 
     else
         echo You did not input a number aborting...
         exit 1
@@ -117,11 +153,11 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         fi
 
         # compare the solutions normally and print the outcome
-        diff $MY_SOLUTION.out $PROBLEM.out
+        diff $side_by_side $MY_SOLUTION.out $PROBLEM.out
         if ! [ $? -eq 0 ]; then
             correct=0
         fi
-        diff $MY_SOLUTION.err $PROBLEM.err
+        diff $side_by_side $MY_SOLUTION.err $PROBLEM.err
         if ! [ $? -eq 0 ]; then
             correct=0
         fi
@@ -148,13 +184,18 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
             printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
             fi
         else
-            printf "\n Test $i is not correct (Your output is the first)\n"
-            correct=0
             if [ $dump -eq 1 ]; then
-                cat $PROBLEM.out.hex
-                printf "\n\n"
-                cat $MY_SOLUTION.out.hex
-                printf "\n\n"
+                echo
+                echo "======================================================================"
+                if [ "$side_by_side" = "" ]; then
+                    cat $PROBLEM.out 
+                    echo
+                    cat $MY_SOLUTION.out
+                else
+                    pr -m -t -W $columns $PROBLEM.out $MY_SOLUTION.out
+                fi
+                echo "======================================================================"
+                echo
             fi
         fi
 
@@ -162,19 +203,20 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         if [ $hex_mode -eq 1 ] && [ $correct -eq 0 ]; then
             hexdump -C $MY_SOLUTION.out > $MY_SOLUTION.out.hex
             hexdump -C $PROBLEM.out > $PROBLEM.out.hex
+            echo
+            echo "======================================================================"
 
-            if [ $dump -eq 1 ]; then
-                cat $PROBLEM.out.hex
-                printf "\n\n"
-                cat $MY_SOLUTION.out.hex
-                printf "\n\n"
-            fi
-
-            diff $MY_SOLUTION.out.hex $PROBLEM.out.hex
+            diff $side_by_side $MY_SOLUTION.out.hex $PROBLEM.out.hex
+            echo "======================================================================"
         fi
 
         # stop at an incorrect solution or if single input is on
         if [ $correct -eq 0 ] || [ $input -eq 1 ]; then
+            echo 
+            echo "======================================================================"
+            echo "TEST $i IS NOT CORRECT (YOUR OUTPUT IS ON THE LEFT OR ON THE TOP)"
+            echo "======================================================================"
+            echo
             break
         fi
 
@@ -210,12 +252,12 @@ else
             fi
 
             # compare my solution with theirs and print the outcome, iff .err exists compare also against it
-            diff $MY_SOLUTION.out $PROBLEM.out
+            diff $side_by_side $MY_SOLUTION.out $PROBLEM.out
             if ! [ $? -eq 0 ]; then 
                 correct=0
             fi
             if test -f $PROBLEM.err; then                
-                diff $MY_SOLUTION.err $PROBLEM.err
+                diff $side_by_side $MY_SOLUTION.err $PROBLEM.err
                 if ! [ $? -eq 0 ]; then 
                     correct=0
                 fi
@@ -224,13 +266,19 @@ else
             if [ $correct -eq 1 ]; then
                 echo "Pub test $number ("${PROBLEM##*/}") is correct (${run_time}ms)"
             else
-                printf "\n Pub test $number ("${PROBLEM##*/}") is not correct (Your output is the first)\n"
                 correct=0
                 if [ $dump -eq 1 ]; then
-                    cat $PROBLEM.out
-                    printf "\n\n"
-                    cat $MY_SOLUTION.out
-                    printf "\n\n"
+                    echo
+                    echo "======================================================================"
+                    if [ "$side_by_side" = "" ]; then
+                        cat $PROBLEM.out 
+                        echo
+                        cat $MY_SOLUTION.out
+                    else
+                        pr -m -t -W $columns $PROBLEM.out $MY_SOLUTION.out
+                    fi
+                    echo "======================================================================"
+                    echo
                 fi
             fi
 
@@ -241,20 +289,20 @@ else
                 if !(test -f $PROBLEM.out.hex); then
                     hexdump -C $PROBLEM.out > $PROBLEM.out.hex
                 fi
-
-                if [ $dump -eq 1 ]; then
-                    cat $PROBLEM.out.hex
-                    printf "\n\n"
-                    cat $MY_SOLUTION.out.hex
-                    printf "\n\n"
-                fi
-
-                diff $MY_SOLUTION.out.hex $PROBLEM.out.hex
+                echo
+                echo "======================================================================"
+                diff $side_by_side $MY_SOLUTION.out.hex $PROBLEM.out.hex
+                echo "======================================================================"
 
             fi
 
             # stop at an incorrect solution
             if [ $correct -eq 0 ]; then
+                echo 
+                echo "==============================================================================="
+                echo "PUB TEST $number ("${PROBLEM##*/}") IS NOT CORRECT (YOUR OUTPUT IS ON THE LEFT OR ON THE TOP)"
+                echo "==============================================================================="
+                echo
                 break
             fi
         else
