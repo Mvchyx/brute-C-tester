@@ -18,9 +18,6 @@ Before running the script for the first time, you need to make it executable: `c
 Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install valgrind`
 
 ## Arguments & Flags
-
--r (Random Mode): Uses the reference generator to create random inputs. If all tests pass, it runs the default number of iterations defined in your JSON settings. Data is saved in the my_random_data folder.
-
 * **`-r` (Random Mode):** Uses the reference generator to create random inputs. If all tests pass, it runs the number of iterations defined in your JSON settings (default is 30). Data is saved in the `my_random_data` folder.
 
 * **`-R <number>` (Custom Random Mode):** Lets you input a custom number of random test iterations (e.g., -R 500).
@@ -35,7 +32,7 @@ Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install val
 
 * **`-i` (Manual input):** Tets your solution against theirs with your custom input.
 
-* **`-s` (Standard Diff):** Disables the default side-by-side output for diff.
+* **`-s` (Standard Diff):** Disables the default side-by-side output for diff and outputs it below each other.
 
 ## Usage Examples
 
@@ -45,7 +42,7 @@ Run against the standard reference `pub??` files in the `data` folder:
     ./test_pubs.sh
 
 **Random Input Test:**
-Run 100 iterations against randomly generated inputs:
+Run 30 iterations against randomly generated inputs:
 
     ./test_pubs.sh -r
 
@@ -58,15 +55,24 @@ Compile the code, run 1000 random inputs, check for memory leaks, and print hex 
 * **Execution Profiling:** Every successful test prints the exact C program execution time in milliseconds (e.g., `Pub test 01 is correct (3ms)`).
 * **Fail-Fast:** The script intentionally halts on the very first failed test or memory leak, preventing terminal spam.
 
-## It reads configuration from two files:
-1. **`default_settings.json`**: The base configuration containing standard values (like `gcc`, `main.c`, and default loop counts). This file should be committed to your repository.
-2. **`user_settings.json`**: An optional local file used to override the defaults. **You should add `user_settings.json` to your `.gitignore` file.**
+## Custom settings:
+**`test_pubs_user_settings.json`**: An optional local file used to override the defaults. **You might add `user_settings.json` to your `.gitignore` file.**
 
 ### Customizing Your Setup
-If you want to change how the script behaves without modifying the code (for example, if you prefer `clang` over `gcc`, or want 100 default loops instead of 30), just use `user_settings.json` in the same folder as `default_settings.json` e.g.:
+If you want to change how the script behaves without modifying the code (for example, if you prefer `clang` over `gcc`, or want 100 default loops instead of 30), just use `test_pubs_user_settings.json` in any parent directory (cannot be located inside a folder has to be in folders above)e.g.:
 
+`/home/user/Documents/PRG/test_pubs_user_settings.json`
+`/home/user/Documents/PRG/HW05/b3b36prg-hw05/test_pubs.sh`
+with these locations it will find the settings file and we do not have to copy it into every folder
+
+## All the json options:
 ```json
 {
-  "compilator": "clang",
-  "default_loops": 100
+  "hw_fallback": "01",
+  "compilator": "gcc -Wall -Wshadow -Wstrict-prototypes -Wconversion -Wformat=2 -Wfloat-equal -std=c99 -pedantic -O2",
+  "source_file": "main.c",
+  "compiled_binary": "./a.out",
+  "ref_prefix": "./b3b36prg-hw",
+  "ref_suffix": "-genref",
+  "default_loops": 30
 }

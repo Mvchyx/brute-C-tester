@@ -1,44 +1,85 @@
 #!/bin/sh
 
-# 1. Search upwards for init_config.sh -> can be located anywhere upwards
-SEARCH_DIR="$(cd "$(dirname "$0")" && pwd)"
-INIT_SCRIPT=""
+# Hardcoded Default Settings
+CONFIG_HW_FALLBACK="01"
+CONFIG_COMPILATOR="gcc"
+CONFIG_SOURCE_FILE="main.c"
+CONFIG_COMPILED_BINARY="./a.out"
+CONFIG_REF_PREFIX="./b3b36prg-hw"
+CONFIG_REF_SUFFIX="-genref"
+CONFIG_DEFAULT_LOOPS=30
 
-while true; do
-    if [ -f "$SEARCH_DIR/init_config.sh" ]; then
-        INIT_SCRIPT="$SEARCH_DIR/init_config.sh"
+# search upwards for user_settings.json
+SEARCH_DIR="$(cd "$(dirname "$0")" && pwd)"
+USER_FILE=""
+
+# not using true as a precaution
+for _ in `seq 1 6`; do
+    # found set $USER_FILE to the found location
+    if [ -f "$SEARCH_DIR/test_pubs_user_settings.json" ]; then
+        USER_FILE="$SEARCH_DIR/test_pubs_user_settings.json"
         break
     fi
     
-    # Stop if we have reached the root directory without finding it
-    if [ "$SEARCH_DIR" = "/" ]; then
+    if [ "$SEARCH_DIR" = "/" ]; then # hit the root exit
         break
     fi
     
-    # Move up one directory level
-    SEARCH_DIR="$(dirname "$SEARCH_DIR")"
+    SEARCH_DIR="$(dirname "$SEARCH_DIR")" # take the parent directory
 done
 
-# Fail gracefully if it was never found
-if [ -z "$INIT_SCRIPT" ]; then
-    echo "Error: init_config.sh not found in this or any parent directories." >&2
-    exit 1
+# Pure POSIX JSON Extractor
+extract_json_value() {
+    key="$1"
+    file="$2"
+    awk -F':' -v k="\"$key\"" '
+    $1 ~ k {
+        val = substr($0, index($0, $2))
+        sub(/^[ \t]+/, "", val)
+        sub(/,[ \t]*$/, "", val)
+        sub(/^"/, "", val)
+        sub(/"$/, "", val)
+        print val
+        exit
+    }' "$file"
+}
+
+user_file_loaded=0
+# Override defaults if user_settings.json exists
+if [ -n "$USER_FILE" ]; then
+    user_file_loaded=1 # set to true to display that loading was successful
+    val=$(extract_json_value "hw_fallback" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_HW_FALLBACK="$val"
+
+    val=$(extract_json_value "compilator" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_COMPILATOR="$val"
+
+    val=$(extract_json_value "source_file" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_SOURCE_FILE="$val"
+
+    val=$(extract_json_value "compiled_binary" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_COMPILED_BINARY="$val"
+
+    val=$(extract_json_value "ref_prefix" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_REF_PREFIX="$val"
+
+    val=$(extract_json_value "ref_suffix" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_REF_SUFFIX="$val"
+
+    val=$(extract_json_value "default_loops" "$USER_FILE")
+    [ -n "$val" ] && CONFIG_DEFAULT_LOOPS="$val"
 fi
 
-# Load the configurations
-. "$INIT_SCRIPT"
-
-# 2. Dynamic HW number extraction
+# Dynamic HW number extraction
 SCRIPT_DIR="$PWD"
 FOLDER_NAME="${SCRIPT_DIR##*/}"
 HW=$(echo "$FOLDER_NAME" | sed 's/.*\(..\)$/\1/')
 
-# Fallback if the folder parsing fails (e.g., if you run it from a weird directory)
 if [ -z "$HW" ]; then
     HW="$CONFIG_HW_FALLBACK"
 fi
 
-# 3. Setup paths using JSON variables
+# Setup paths using configured variables (either the harcoded or the loaded ones)
 PROGRAM_REF="${CONFIG_REF_PREFIX}${HW}${CONFIG_REF_SUFFIX}"
 NC_PROGRAM_MY="$CONFIG_SOURCE_FILE"
 PROGRAM_MY="$CONFIG_COMPILED_BINARY"
@@ -89,6 +130,7 @@ printf " Random (-r/-R)       : %s\n" "$([ "$random_mode" -eq 1 ] && echo "ON" |
 printf " Entire dump (-d)     : %s\n" "$([ "$dump" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Manual Input (-i)    : %s\n" "$([ "$input" -eq 1 ] && echo "ON" || echo "OFF")"
 printf " Side by side (-s)    : %s\n" "$([ "$side_by_side" = "" ] && echo "OFF" || echo "ON")"
+printf " Custom json settings : %s\n" "$([ "$user_file_loaded" -eq 1 ] && echo "ON" || echo "OFF")"
 
 echo "========================================"
 echo ""

@@ -1,3 +1,9 @@
-{
-      "compilator": "gcc -Wall -Wshadow -Wstrict-prototypes -Wconversion -Wformat=2 -Wfloat-equal -std=c99 -pedantic -O2"
+{  
+  "hw_fallback": "01",
+  "compilator": "gcc -Wall -Wshadow -Wstrict-prototypes -Wconversion -Wformat=2 -Wfloat-equal -std=c99 -pedantic -O2",
+  "source_file": "main.c",
+  "compiled_binary": "./a.out",
+  "ref_prefix": "./b3b36prg-hw",
+  "ref_suffix": "-genref",
+  "default_loops": 30
 }
