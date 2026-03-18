@@ -230,11 +230,11 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
                 echo
                 echo "======================================================================"
                 if [ "$side_by_side" = "" ]; then
-                    cat $PROBLEM.out 
-                    echo
                     cat $MY_SOLUTION.out
+                    echo
+                    cat $PROBLEM.out                    
                 else
-                    pr -m -t -W $columns $PROBLEM.out $MY_SOLUTION.out
+                    pr -m -t -W $columns $MY_SOLUTION.out $PROBLEM.out
                 fi
                 echo "======================================================================"
                 echo
@@ -313,11 +313,11 @@ else
                     echo
                     echo "======================================================================"
                     if [ "$side_by_side" = "" ]; then
-                        cat $PROBLEM.out 
-                        echo
                         cat $MY_SOLUTION.out
+                        echo
+                        cat $PROBLEM.out  
                     else
-                        pr -m -t -W $columns $PROBLEM.out $MY_SOLUTION.out
+                        pr -m -t -W $columns $MY_SOLUTION.out $PROBLEM.out
                     fi
                     echo "======================================================================"
                     echo
