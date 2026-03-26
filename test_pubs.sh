@@ -204,7 +204,15 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
             correct=0
         fi
 
-        if [ $correct -eq 1 ]; then
+        if [ $input -eq 1 ] && [ $correct -eq 1 ]; then
+            echo 
+            echo "======================================================================"
+            echo "Manual test is correct"
+            echo "======================================================================"
+            echo
+        fi
+
+        if [ $correct -eq 1 ] && [ $input -eq 0 ]; then
             # count parameters for statistics later
             number_of_correct=$((number_of_correct + 1 ))
             sum_runtimes=$((sum_runtimes + $run_time ))
@@ -226,7 +234,7 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
             printf "\r Random tests: [%-${bar_width}s] %d%% (%d/%d)" $bar $percent $number_of_correct $loops
             fi
         else
-            if [ $dump -eq 1 ]; then
+            if [ $dump -eq 1 ] && [ $correct -eq 0 ]; then
                 echo
                 echo "======================================================================"
                 if [ "$side_by_side" = "" ]; then
@@ -253,12 +261,16 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
         fi
 
         # stop at an incorrect solution or if single input is on
-        if [ $correct -eq 0 ] || [ $input -eq 1 ]; then
+        if [ $correct -eq 0 ]; then
             echo 
             echo "======================================================================"
             echo "TEST $i IS NOT CORRECT (YOUR OUTPUT IS ON THE LEFT OR ON THE TOP)"
             echo "======================================================================"
             echo
+            break
+        fi
+
+        if [ $input -eq 1 ];then
             break
         fi
 
