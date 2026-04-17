@@ -281,87 +281,93 @@ if [ $random_mode -eq 1 ] || [ $input -eq 1 ]; then
 else
     mkdir -p my_data
 
-    # loops through all files in data that ends .in
-    for FILE in data/*.in;
+    # loops through all files in data AND one subfolder deep
+    for FILE in data/*.in data/*/*.in;
     do
-        # do this only if the file with the corresponding name exists
-        if test -f $FILE; then
-            number=$(echo "$FILE" | sed 's/^[^0-9]*\([0-9]*\).*$/\1/') # extracts first occurence of a number in the file name
-            MY_SOLUTION=my_data/my_pub$number # where I want my solutions to be saved
-            PROBLEM="${FILE%.in}" # strip away the .in
-                    
-            start_time=$(date +%s%3N) #start timer
-            # run my program
-            $valgrind $PROGRAM_MY < $PROBLEM.in > $MY_SOLUTION.out 2> $MY_SOLUTION.err
-            valgrind_status=$? # catch valgrind return message
-            end_time=$(date +%s%3N) # end timer
-            run_time=$(($end_time - $start_time)) # final time
+        # Safely skip if a pattern finds nothing, without crashing the loop
+        [ -e "$FILE" ] || continue
+
+        # 1. Extract just the filename (e.g., "pub01.in")
+        FILE_NO_DIR="${FILE##*/}"
+        
+        # 2. Extract number from the FILENAME only (ignores numbers in folder paths)
+        number=$(echo "$FILE_NO_DIR" | sed 's/^[^0-9]*\([0-9]*\).*$/\1/') 
+        
+        # 3. Use the clean filename to prevent overwrites if subfolders share numbers
+        MY_SOLUTION=my_data/my_${FILE_NO_DIR%.in} 
+        
+        # 4. Strip the .in to keep the full relative path (e.g., "data/man/pub01")
+        PROBLEM="${FILE%.in}" 
+                
+        start_time=$(date +%s%3N) #start timer
+        
+        # run my program
+        $valgrind $PROGRAM_MY < $PROBLEM.in > $MY_SOLUTION.out 2> $MY_SOLUTION.err
+        valgrind_status=$? # catch valgrind return message
+        end_time=$(date +%s%3N) # end timer
+        run_time=$(($end_time - $start_time)) # final time
 
 
-            # check valgrind error           
-            if [ "$valgrind_status" -eq 42 ]; then
-                printf "\n Pub test $number ("${PROBLEM##*/}") memory leak detected:"
-                cat valgrind_leak.log # show the valgrind error
-                correct=0
-            fi
+        # check valgrind error           
+        if [ "$valgrind_status" -eq 42 ]; then
+            printf "\n Pub test $number ("${PROBLEM##*/}") memory leak detected:"
+            cat valgrind_leak.log # show the valgrind error
+            correct=0
+        fi
 
-            # compare my solution with theirs and print the outcome, iff .err exists compare also against it
-            diff $side_by_side $MY_SOLUTION.out $PROBLEM.out
+        # compare my solution with theirs and print the outcome, iff .err exists compare also against it
+        diff $side_by_side $MY_SOLUTION.out $PROBLEM.out
+        if ! [ $? -eq 0 ]; then 
+            correct=0
+        fi
+        if test -f $PROBLEM.err; then                
+            diff $side_by_side $MY_SOLUTION.err $PROBLEM.err
             if ! [ $? -eq 0 ]; then 
                 correct=0
             fi
-            if test -f $PROBLEM.err; then                
-                diff $side_by_side $MY_SOLUTION.err $PROBLEM.err
-                if ! [ $? -eq 0 ]; then 
-                    correct=0
-                fi
-            fi
+        fi
 
-            if [ $correct -eq 1 ]; then
-                echo "Pub test $number ("${PROBLEM##*/}") is correct (${run_time}ms)"
-            else
-                correct=0
-                if [ $dump -eq 1 ]; then
-                    echo
-                    echo "======================================================================"
-                    if [ "$side_by_side" = "" ]; then
-                        cat $MY_SOLUTION.out
-                        echo
-                        cat $PROBLEM.out  
-                    else
-                        pr -m -t -W $columns $MY_SOLUTION.out $PROBLEM.out
-                    fi
-                    echo "======================================================================"
-                    echo
-                fi
-            fi
-
-            # if -x compare it also in the hex form
-            if [ $hex_mode -eq 1 ] && [ $correct -eq 0 ]; then
-                hexdump -C $MY_SOLUTION.out > $MY_SOLUTION.out.hex
-
-                if !(test -f $PROBLEM.out.hex); then
-                    hexdump -C $PROBLEM.out > $PROBLEM.out.hex
-                fi
-                echo
-                echo "======================================================================"
-                diff $side_by_side $MY_SOLUTION.out.hex $PROBLEM.out.hex
-                echo "======================================================================"
-
-            fi
-
-            # stop at an incorrect solution
-            if [ $correct -eq 0 ]; then
-                echo 
-                echo "==============================================================================="
-                echo "PUB TEST $number ("${PROBLEM##*/}") IS NOT CORRECT (YOUR OUTPUT IS ON THE LEFT OR ON THE TOP)"
-                echo "==============================================================================="
-                echo
-                break
-            fi
+        if [ $correct -eq 1 ]; then
+            echo "Pub test $number ("${PROBLEM##*/}") is correct (${run_time}ms)"
         else
-            echo "Error loading files: The folder is probably empty"
-            exit 1
+            correct=0
+            if [ $dump -eq 1 ]; then
+                echo
+                echo "======================================================================"
+                if [ "$side_by_side" = "" ]; then
+                    cat $MY_SOLUTION.out
+                    echo
+                    cat $PROBLEM.out  
+                else
+                    pr -m -t -W $columns $MY_SOLUTION.out $PROBLEM.out
+                fi
+                echo "======================================================================"
+                echo
+            fi
+        fi
+
+        # if -x compare it also in the hex form
+        if [ $hex_mode -eq 1 ] && [ $correct -eq 0 ]; then
+            hexdump -C $MY_SOLUTION.out > $MY_SOLUTION.out.hex
+
+            if !(test -f $PROBLEM.out.hex); then
+                hexdump -C $PROBLEM.out > $PROBLEM.out.hex
+            fi
+            echo
+            echo "======================================================================"
+            diff $side_by_side $MY_SOLUTION.out.hex $PROBLEM.out.hex
+            echo "======================================================================"
+
+        fi
+
+        # stop at an incorrect solution
+        if [ $correct -eq 0 ]; then
+            echo 
+            echo "==============================================================================="
+            echo "PUB TEST $number ("${PROBLEM##*/}") IS NOT CORRECT (YOUR OUTPUT IS ON THE LEFT OR ON THE TOP)"
+            echo "==============================================================================="
+            echo
+            break
         fi
     done
 fi
