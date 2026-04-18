@@ -104,7 +104,7 @@ side_by_side="-y --suppress-common-lines -W $columns"
 
 # get the flags and make the corresponding vars true 
 # what each flag does is clear from the config table below
-while getopts "xrvcsdiR:" flag; do
+while getopts "xrvcsdiR:f:" flag; do
     case "${flag}" in
         x) hex_mode=1 ;;
         r) random_mode=1;;
@@ -115,6 +115,8 @@ while getopts "xrvcsdiR:" flag; do
         R) loops=${OPTARG}
             random_mode=1 ;;
         s) side_by_side="" ;;
+        f) PROGRAM_REF="${PROGRAM_REF} ${OPTARG}" #aditional flag will be passed to both programs
+            PROGRAM_MY="${PROGRAM_MY} ${OPTARG}"
     esac
 done
 
