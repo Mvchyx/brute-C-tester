@@ -116,7 +116,7 @@ while getopts "xrvcsdiR:f:" flag; do
             random_mode=1 ;;
         s) side_by_side="" ;;
         f) PROGRAM_REF="${PROGRAM_REF} ${OPTARG}" #aditional flag will be passed to both programs
-            PROGRAM_MY="${PROGRAM_MY} ${OPTARG}"
+            PROGRAM_MY="${PROGRAM_MY} ${OPTARG}" ;;
     esac
 done
 
