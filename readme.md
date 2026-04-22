@@ -34,6 +34,8 @@ Valgrind has to be downloaded (If valgrind is to be used): `sudo apt install val
 
 * **`-s` (Standard Diff):** Disables the default side-by-side output for diff and outputs it below each other.
 
+* **`-f <flags>` (Optional flags):** Lets you pass arguments to both your program and the reference solution (e.g., -f "-prg-optional").
+
 ## Usage Examples
 
 **Basic Pub Test:**
@@ -45,6 +47,11 @@ Run against the standard reference `pub??` files in the `data` folder:
 Run 30 iterations against randomly generated inputs:
 
     ./test_pubs.sh -r
+
+**Run programs with flags:**
+Compile code, run 100 iterations against random inputs with "-prg-optional" flag:
+
+    ./test_pubs.sh -cR 100 -f "-prg-optional"
 
 **The Ultimate Validation:**
 Compile the code, run 1000 random inputs, check for memory leaks, and print hex dumps if anything fails:
